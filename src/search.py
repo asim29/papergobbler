@@ -2,6 +2,7 @@ import re
 
 from .entities import Paper
 
+
 def tokenize(query: str) -> list[str]:
     """
     Convert a free-text query into normalized search tokens.

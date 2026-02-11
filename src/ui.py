@@ -2,6 +2,7 @@ import streamlit as st
 
 from .entities import Paper
 
+
 def abstract_preview(text: str, max_chars: int = 250) -> str:
     """
     Produce a short preview of an abstract.
@@ -32,7 +33,7 @@ def render_results(results: list[Paper]) -> None:
     st.write(f"{len(results)} result(s)")
 
     for paper in results:
-        st.markdown(f"**{paper.title or 'Untitled'}**")
+        _ = st.markdown(f"**{paper.title or 'Untitled'}**")
 
         authors = ", ".join(paper.authors) if paper.authors else "Unknown authors"
         year = str(paper.year) if paper.year is not None else ""
@@ -58,4 +59,4 @@ def render_results(results: list[Paper]) -> None:
             if paper.keywords:
                 st.write("Keywords:", ", ".join(paper.keywords))
 
-        st.divider()
+        _ = st.divider()

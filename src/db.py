@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
-from typing import Any
+from typing import cast
 
 from .entities import Paper
+
+JSONDict = dict[str, object]
 
 
 def load_papers(path: Path) -> list[Paper]:
@@ -16,15 +18,30 @@ def load_papers(path: Path) -> list[Paper]:
         list[Paper]: Parsed Paper instances.
 
     Raises:
-        KeyError: If the JSON file does not contain a "references" field.
-        ValueError: If "references" is not a list.
+        ValueError: If the JSON structure is unexpected.
     """
     with open(path, "r", encoding="utf-8") as f:
-        data: dict[str, Any] = json.load(f)
+        raw = cast(object, json.load(f))
 
-    references = data["references"]
+    if not isinstance(raw, dict):
+        raise ValueError("Expected top-level JSON object to be a dictionary.")
 
-    if not isinstance(references, list):
+    root = cast(JSONDict, raw)
+
+    if "references" not in root:
+        raise ValueError('Missing required key: "references".')
+
+    references_obj = root["references"]
+
+    if not isinstance(references_obj, list):
         raise ValueError('Expected "references" to be a list.')
+
+    references_list = cast(list[object], references_obj)
+
+    references: list[JSONDict] = []
+    for item in references_list:
+        if not isinstance(item, dict):
+            raise ValueError('Expected each item in "references" to be a dictionary.')
+        references.append(cast(JSONDict, item))
 
     return [Paper.from_dict(item) for item in references]
