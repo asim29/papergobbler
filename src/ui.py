@@ -136,60 +136,115 @@ def render_results(results: list[Paper]) -> None:
 
 def render_sidebar(papers: list[Paper]) -> None:
     """
-    Render sidebar UI for creating/selecting collections and viewing contents.
-
-    Uses:
-        st.session_state["collections"]: list[Collection]
-        st.session_state["active_collection_id"]: str | None
+    Render sidebar navigation + collections + items list.
 
     Args:
-        papers (list[Paper]): All papers (used for rendering collection contents).
+        papers (list[Paper]): All papers (for mapping paper_id -> Paper).
 
     Returns:
         None
     """
+    collections = cast(list[Collection], st.session_state["collections"])
+    active_id = cast(str | None, st.session_state["active_collection_id"])
+    selected_id = cast(str | None, st.session_state["selected_paper_id"])
+
+    by_id = {p.paper_id: p for p in papers}
+
+    # ---- Nav ----
+    if st.sidebar.button("Search", key="nav_search"):
+        st.session_state["page"] = "search"
+        st.rerun()
+
+    _ = st.sidebar.divider()
+
+    # ---- Collections ----
     _ = st.sidebar.header("Collections")
 
     new_name: str = st.sidebar.text_input(
         "New collection name", key="new_collection_name"
     )
-
-    if st.sidebar.button("Create collection"):
+    if st.sidebar.button("Create collection", key="create_collection"):
         name = new_name.strip()
         if not name:
             _ = st.sidebar.error("Enter a name.")
-            return
+        else:
+            cid = hashlib.sha1(name.encode("utf-8")).hexdigest()
+            if any(c.id == cid for c in collections):
+                _ = st.sidebar.warning("Collection already exists.")
+            else:
+                collections.append(Collection(id=cid, name=name))
+                st.session_state["active_collection_id"] = cid
+                st.rerun()
 
-        cid = hashlib.sha1(name.strip().encode("utf-8")).hexdigest()
-
-        collections = cast(list[Collection], st.session_state["collections"])
-        if any(c.id == cid for c in collections):
-            _ = st.sidebar.warning("Collection already exists.")
-            return
-
-        collections.append(Collection(id=cid, name=name))
-        st.session_state["active_collection_id"] = cid
-        _ = st.sidebar.success("Created.")
-        st.rerun()
-
-    collections = cast(list[Collection], st.session_state["collections"])
     if not collections:
-        _ = st.sidebar.info("No collections yet.")
+        _ = st.sidebar.caption("No collections yet.")
         return
 
-    # Pick active
-    id_by_name = {c.name: c.id for c in collections}
-    names = list(id_by_name.keys())
+    # Clickable collections list
+    names = [c.name for c in collections]
+    active = next((c for c in collections if c.id == active_id), None)
+    default_idx = 0 if active is None else names.index(active.name)
 
-    active_id = cast(str | None, st.session_state["active_collection_id"])
-    idx = 0
-    if active_id is not None:
-        ids = list(id_by_name.values())
-        if active_id in ids:
-            idx = ids.index(active_id)
+    picked = st.sidebar.selectbox("Collections", names, index=default_idx)
+    picked_col = next(c for c in collections if c.name == picked)
 
-    active_name = st.sidebar.selectbox("Active collection", names, index=idx)
-    st.session_state["active_collection_id"] = id_by_name[active_name]
+    st.session_state["active_collection_id"] = picked_col.id
 
     _ = st.sidebar.divider()
-    render_active_collection(papers)
+
+    # ---- Items (active collection) ----
+    active = next((c for c in collections if c.id == active_id), None)
+    if active is None:
+        _ = st.sidebar.caption("Select a collection to see items.")
+        return
+
+    if st.sidebar.button(
+        f"{active.name} ({len(active.paper_ids)})", key="open_active_collection"
+    ):
+        st.session_state["page"] = "collection"
+        st.rerun()
+
+    if not active.paper_ids:
+        _ = st.sidebar.caption("Empty.")
+        return
+
+    for pid in active.paper_ids:
+        p = by_id.get(pid)
+        title = p.title if p is not None and p.title else "(missing)"
+        prefix = "• "
+        if pid == selected_id:
+            prefix = "→ "
+        if st.sidebar.button(f"{prefix}{title}", key=f"item_{pid}"):
+            st.session_state["selected_paper_id"] = pid
+            st.rerun()
+
+
+def render_paper_view(paper: Paper) -> None:
+    """
+    Render a focused view of a single paper.
+
+    Args:
+        paper (Paper): Paper to render.
+
+    Returns:
+        None
+    """
+    _ = st.subheader(paper.title or "Untitled")
+
+    authors = ", ".join(paper.authors) if paper.authors else "Unknown authors"
+    year = str(paper.year) if paper.year is not None else ""
+    meta = " · ".join([p for p in [authors, year] if p])
+    if meta:
+        _ = st.write(meta)
+
+    if paper.journal:
+        _ = st.write(paper.journal)
+
+    if paper.abstract:
+        _ = st.write(paper.abstract)
+
+    if paper.doi:
+        _ = st.write("DOI:", paper.doi)
+
+    if paper.keywords:
+        _ = st.write("Keywords:", ", ".join(paper.keywords))
