@@ -1,16 +1,16 @@
 [project]
-name = "research-app"
+name = "papergobbler"
 version = "0.1.0"
-description = "Add your description here"
+description = "PaperGobbler – chaotic literature interface"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = "==3.11.*"
 dependencies = [
-    "streamlit>=1.54.0",
+    "streamlit==1.54.0",
 ]
 
 [dependency-groups]
 dev = [
-    "basedpyright>=1.38.0",
-    "pre-commit>=4.5.1",
-    "ruff>=0.15.0",
+    "basedpyright==1.38.0",
+    "pre-commit==4.5.1",
+    "ruff==0.15.0",
 ]
