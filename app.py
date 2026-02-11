@@ -4,7 +4,7 @@ import streamlit as st
 
 from src.db import load_papers
 from src.entities import Paper
-from src.search import search_papers
+from src.search import SearchIndex, build_index, search_papers
 from src.ui import render_results
 
 
@@ -25,6 +25,20 @@ def cached_load_papers(path: Path) -> list[Paper]:
     return load_papers(path)
 
 
+@st.cache_resource
+def cached_build_index(papers: list[Paper]) -> SearchIndex:
+    """
+    Build the TF-IDF search index with Streamlit resource caching enabled.
+
+    Args:
+        papers (list[Paper]): Papers to index.
+
+    Returns:
+        SearchIndex: Precomputed TF-IDF index.
+    """
+    return build_index(papers)
+
+
 def main() -> None:
     """
     Streamlit application entrypoint.
@@ -32,11 +46,12 @@ def main() -> None:
     _ = st.title("Literature Search")
 
     papers: list[Paper] = cached_load_papers(DATA_PATH)
+    index: SearchIndex = cached_build_index(papers)
 
     query: str = st.text_input("Search")
 
     if st.button("Search"):
-        results: list[Paper] = search_papers(papers, query)
+        results: list[Paper] = search_papers(index, query)
         render_results(results)
 
 

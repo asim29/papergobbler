@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = "==3.11.*"
 dependencies = [
     "streamlit==1.54.0",
+    "scikit-learn==1.5.2",
 ]
 
 [dependency-groups]
@@ -14,3 +15,9 @@ dev = [
     "pre-commit==4.5.1",
     "ruff==0.15.0",
 ]
+
+[tool.basedpyright]
+reportMissingTypeStubs = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"

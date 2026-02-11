@@ -1,4 +1,10 @@
+from __future__ import annotations
+
 import re
+from dataclasses import dataclass
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
 
 from .entities import Paper
 
@@ -18,7 +24,7 @@ def tokenize(query: str) -> list[str]:
 
 def build_search_text(paper: Paper) -> str:
     """
-    Flatten a Paper into a single lowercase string for simple matching.
+    Flatten a Paper into a single lowercase string for indexing.
 
     Args:
         paper (Paper): A paper record.
@@ -38,58 +44,93 @@ def build_search_text(paper: Paper) -> str:
     return " ".join(fields).lower()
 
 
-def score_paper(search_text: str, tokens: list[str]) -> int:
+@dataclass(frozen=True)
+class SearchIndex:
     """
-    Compute a simple relevance score based on token occurrence counts.
+    Precomputed TF-IDF search index for a collection of papers.
+
+    Attributes:
+        vectorizer (TfidfVectorizer): Fitted vectorizer.
+        doc_matrix: Sparse TF-IDF matrix for all papers.
+        papers (list[Paper]): Original papers aligned with doc_matrix rows.
+    """
+
+    vectorizer: TfidfVectorizer
+    doc_matrix: object
+    papers: list[Paper]
+
+
+def build_index(papers: list[Paper]) -> SearchIndex:
+    """
+    Build a TF-IDF index over a collection of papers.
 
     Args:
-        search_text (str): Flattened searchable text.
-        tokens (list[str]): Query tokens.
+        papers (list[Paper]): Papers to index.
 
     Returns:
-        int: Total occurrences of tokens in the search text.
+        SearchIndex: Precomputed search index for efficient querying.
     """
-    return sum(search_text.count(token) for token in tokens)
+    texts = [build_search_text(p) for p in papers]
+
+    vectorizer = TfidfVectorizer(
+        lowercase=True,
+        token_pattern=r"[a-z0-9]+",
+        ngram_range=(1, 2),
+        min_df=1,
+    )
+
+    doc_matrix = vectorizer.fit_transform(texts)
+
+    return SearchIndex(
+        vectorizer=vectorizer,
+        doc_matrix=doc_matrix,
+        papers=papers,
+    )
 
 
-def search_papers(papers: list[Paper], query: str) -> list[Paper]:
+def search_papers(
+    index: SearchIndex,
+    query: str,
+    *,
+    k: int | None = None,
+) -> list[Paper]:
     """
-    Search papers using AND token matching over flattened text.
+    Search papers using TF-IDF cosine similarity ranking.
 
     Behavior:
         - If query is empty: return all papers sorted by year descending.
-        - Otherwise: keep papers where all tokens appear and rank by
-          score descending, then year descending, then title ascending.
+        - Otherwise: rank papers by cosine similarity, then by year descending,
+          then title ascending.
+        - Only papers with positive similarity scores are returned.
 
     Args:
-        papers (list[Paper]): Papers to search.
+        index (SearchIndex): Precomputed search index.
         query (str): User search query.
+        k (int | None): Optional maximum number of results.
 
     Returns:
         list[Paper]: Ranked matching papers.
     """
-    tokens = tokenize(query)
+    q = query.strip()
 
-    results: list[tuple[int, Paper]] = []
+    if not q:
+        return sorted(
+            index.papers,
+            key=lambda p: (-(p.year or 0), p.title.lower()),
+        )
 
-    for paper in papers:
-        text = build_search_text(paper)
+    query_vector = index.vectorizer.transform([q])
+    scores = linear_kernel(query_vector, index.doc_matrix).ravel()
 
-        if tokens:
-            if not all(token in text for token in tokens):
-                continue
-            score = score_paper(text, tokens)
-        else:
-            score = 0
-
-        results.append((score, paper))
-
-    results.sort(
+    ranked = sorted(
+        enumerate(index.papers),
         key=lambda item: (
-            -item[0],
+            -float(scores[item[0]]),
             -(item[1].year or 0),
             item[1].title.lower(),
-        )
+        ),
     )
 
-    return [paper for _, paper in results]
+    results = [paper for idx, paper in ranked if scores[idx] > 0]
+
+    return results[:k] if k is not None else results
