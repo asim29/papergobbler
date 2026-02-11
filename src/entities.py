@@ -1,8 +1,26 @@
-from dataclasses import dataclass
+import hashlib
+from dataclasses import dataclass, field
 from typing import cast
-
+from datetime import datetime, timezone
 
 JSONDict = dict[str, object]
+
+
+def make_paper_id(title: str, year: int | None, authors: list[str]) -> str:
+    """
+    Create a stable ID for a paper using a short SHA-1 hash.
+
+    Args:
+        title (str): Paper title.
+        year (int | None): Publication year.
+        authors (list[str]): Author names.
+
+    Returns:
+        str: Stable 12-char hexadecimal identifier.
+    """
+    first_author = authors[0] if authors else ""
+    base = f"{title.strip().lower()}|{year or ''}|{first_author.strip().lower()}"
+    return hashlib.sha1(base.encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -12,6 +30,7 @@ class Paper:
     """
 
     id: int
+    paper_id: str
     title: str
     authors: list[str]
     year: int | None
@@ -79,8 +98,12 @@ class Paper:
                 if s:
                     keywords.append(s)
 
+        # ---- final id for database ----
+        stable_id = make_paper_id(title=title, year=year, authors=authors)
+
         return Paper(
             id=paper_id,
+            paper_id=stable_id,
             title=title,
             authors=authors,
             year=year,
@@ -89,3 +112,17 @@ class Paper:
             keywords=keywords,
             doi=doi,
         )
+
+
+@dataclass
+class Collection:
+    """
+    Represents a user-defined collection of papers.
+    """
+
+    id: str
+    name: str
+    paper_ids: list[str] = field(default_factory=list)
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )

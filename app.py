@@ -1,14 +1,31 @@
 from pathlib import Path
+from typing import cast
 
 import streamlit as st
 
 from src.db import load_papers
 from src.entities import Paper
 from src.search import SearchIndex, build_index, search_papers
-from src.ui import render_results
-
+from src.ui import render_results, render_sidebar
 
 DATA_PATH = Path(__file__).parent / "data" / "papers.json"
+
+
+def init_state() -> None:
+    """
+    Initialize Streamlit session state for collections and selection.
+    """
+    if "collections" not in st.session_state:
+        st.session_state["collections"] = []  # list[Collection]
+
+    if "active_collection_id" not in st.session_state:
+        st.session_state["active_collection_id"] = None  # str | None
+
+    if "results" not in st.session_state:
+        st.session_state["results"] = []  # list[Paper]
+
+    if "has_searched" not in st.session_state:
+        st.session_state["has_searched"] = False
 
 
 @st.cache_data
@@ -47,11 +64,17 @@ def main() -> None:
 
     papers: list[Paper] = cached_load_papers(DATA_PATH)
     index: SearchIndex = cached_build_index(papers)
+    init_state()
+    render_sidebar(papers)
 
     query: str = st.text_input("Search")
 
     if st.button("Search"):
-        results: list[Paper] = search_papers(index, query)
+        st.session_state["results"] = search_papers(index, query)
+        st.session_state["has_searched"] = True
+
+    if cast(bool, st.session_state["has_searched"]):
+        results = cast(list[Paper], st.session_state["results"])
         render_results(results)
 
 
