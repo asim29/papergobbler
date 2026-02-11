@@ -160,10 +160,11 @@ def render_sidebar(papers: list[Paper]) -> None:
     # ---- Collections ----
     _ = st.sidebar.header("Collections")
 
-    new_name: str = st.sidebar.text_input(
-        "New collection name", key="new_collection_name"
-    )
-    if st.sidebar.button("Create collection", key="create_collection"):
+    with st.sidebar.form("create_collection_form", clear_on_submit=True):
+        new_name: str = st.text_input("New collection name", key="new_collection_name")
+        create = st.form_submit_button("Create collection")
+
+    if create:
         name = new_name.strip()
         if not name:
             _ = st.sidebar.error("Enter a name.")
@@ -216,6 +217,7 @@ def render_sidebar(papers: list[Paper]) -> None:
             prefix = "→ "
         if st.sidebar.button(f"{prefix}{title}", key=f"item_{pid}"):
             st.session_state["selected_paper_id"] = pid
+            st.session_state["page"] = "collection"
             st.rerun()
 
 

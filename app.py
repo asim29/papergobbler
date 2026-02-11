@@ -83,9 +83,11 @@ def main() -> None:
     active = next((c for c in collections if c.id == active_cid), None)
 
     if page == "search":
-        query: str = st.text_input("Search")
+        with st.form("search_form"):
+            query: str = st.text_input("Search")
+            submitted = st.form_submit_button("Search")
 
-        if st.button("Search"):
+        if submitted:
             st.session_state["results"] = search_papers(index, query)
             st.session_state["has_searched"] = True
 
