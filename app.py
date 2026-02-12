@@ -3,10 +3,10 @@ from typing import cast
 
 import streamlit as st
 
+from entities import Collection, Paper
 from src.db import load_papers
-from src.entities import Paper, Collection
 from src.search import SearchIndex, build_index, search_papers
-from src.ui import render_results, render_sidebar, render_paper_view
+from ui import render_paper_view, render_results, render_sidebar
 
 DATA_PATH = Path(__file__).parent / "data" / "papers.json"
 

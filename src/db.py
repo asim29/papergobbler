@@ -2,9 +2,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from .entities import Paper
-
-JSONDict = dict[str, object]
+from entities import JSONDict, Paper
 
 
 def load_papers(path: Path) -> list[Paper]:

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
-from .entities import Paper
+from entities import Paper
 
 
 def tokenize(query: str) -> list[str]:

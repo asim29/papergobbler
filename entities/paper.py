@@ -1,7 +1,6 @@
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import cast
-from datetime import datetime, timezone
 
 JSONDict = dict[str, object]
 
@@ -112,17 +111,3 @@ class Paper:
             keywords=keywords,
             doi=doi,
         )
-
-
-@dataclass
-class Collection:
-    """
-    Represents a user-defined collection of papers.
-    """
-
-    id: str
-    name: str
-    paper_ids: list[str] = field(default_factory=list)
-    created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )

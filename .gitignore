@@ -18,16 +18,26 @@ __pycache__/
 .streamlit/
 
 # =========================
-# Editor (optional)
+# Editors / IDEs
 # =========================
 .vscode/
 .idea/
 
 # =========================
-# Misc
+# Linters / Tools
+# =========================
+.ruff_cache/
+node_modules/
+
+# =========================
+# AI / Dev Tools
+# =========================
+.claude/
+.devcontainer/
+CLAUDE.md
+
+# =========================
+# Environment
 # =========================
 .env
 .env.*
-node_modules/
-.devcontainer/
-CLAUDE.md
