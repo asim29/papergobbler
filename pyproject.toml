@@ -1,12 +1,13 @@
 [project]
 name = "papergobbler"
 version = "0.1.0"
-description = "PaperGobbler – chaotic literature interface"
+description = "PaperGobbler – Literature search interface"
 readme = "README.md"
 requires-python = "==3.11.*"
 dependencies = [
     "streamlit==1.54.0",
-    "scikit-learn==1.5.2",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [dependency-groups]
