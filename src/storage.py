@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import cast
 
 from entities import Collection
 
@@ -26,7 +27,7 @@ def load_all_collections() -> list[Collection]:
     collections: list[Collection] = []
     for path in COLLECTIONS_DIR.glob("*.json"):
         with open(path, "r", encoding="utf-8") as f:
-            data: dict[str, object] = json.load(f)  # pyright: ignore[reportAny]
+            data = cast(dict[str, object], json.load(f))
         collections.append(Collection.from_dict(data))
     return sorted(collections, key=lambda c: c.created_at)
 

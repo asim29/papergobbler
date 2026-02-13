@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import os
+from typing import cast
 
 import requests
 from dotenv import load_dotenv
 
 from entities import Paper
 
-load_dotenv()  # pyright: ignore[reportUnusedCallResult]
+_ = load_dotenv()
 
 BASE_URL = "https://api.semanticscholar.org/graph/v1"
 RECS_URL = "https://api.semanticscholar.org/recommendations/v1/papers/"
@@ -53,8 +54,7 @@ def _get(url: str, params: dict[str, str | int] | None = None) -> dict[str, obje
     resp = _session().get(url, params=params)
     if not resp.ok:
         raise S2ApiError(resp.status_code, resp.text)
-    result: dict[str, object] = resp.json()  # pyright: ignore[reportAny]
-    return result
+    return cast(dict[str, object], resp.json())
 
 
 def _post(
@@ -66,8 +66,7 @@ def _post(
     resp = _session().post(url, params=params, json=json_body)
     if not resp.ok:
         raise S2ApiError(resp.status_code, resp.text)
-    result: dict[str, object] = resp.json()  # pyright: ignore[reportAny]
-    return result
+    return cast(dict[str, object], resp.json())
 
 
 def search_papers(
