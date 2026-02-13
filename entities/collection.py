@@ -1,16 +1,48 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+
+
+def _parse_paper_ids(raw: object) -> list[str]:
+    if isinstance(raw, list):
+        return [str(pid) for pid in raw]
+    return []
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 @dataclass
 class Collection:
     """
-    Represents a user-defined collection of papers.
+    A user-defined collection of papers. Persisted as JSON on disk.
     """
 
     id: str
     name: str
     paper_ids: list[str] = field(default_factory=list)
-    created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    created_at: str = field(default_factory=_now_iso)
+    updated_at: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> dict[str, object]:
+        """Serialize to a plain dict for JSON storage."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "paper_ids": self.paper_ids,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+    @staticmethod
+    def from_dict(data: dict[str, object]) -> Collection:
+        """Reconstruct a Collection from a saved JSON dict."""
+        return Collection(
+            id=str(data.get("id", "")),
+            name=str(data.get("name", "")),
+            paper_ids=_parse_paper_ids(data.get("paper_ids")),
+            created_at=str(data.get("created_at", _now_iso())),
+            updated_at=str(data.get("updated_at", _now_iso())),
+        )

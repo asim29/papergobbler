@@ -1,113 +1,121 @@
-import hashlib
-from dataclasses import dataclass
-from typing import cast
+from __future__ import annotations
 
-JSONDict = dict[str, object]
-
-
-def make_paper_id(title: str, year: int | None, authors: list[str]) -> str:
-    """
-    Create a stable ID for a paper using a short SHA-1 hash.
-
-    Args:
-        title (str): Paper title.
-        year (int | None): Publication year.
-        authors (list[str]): Author names.
-
-    Returns:
-        str: Stable 12-char hexadecimal identifier.
-    """
-    first_author = authors[0] if authors else ""
-    base = f"{title.strip().lower()}|{year or ''}|{first_author.strip().lower()}"
-    return hashlib.sha1(base.encode("utf-8")).hexdigest()
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
 class Paper:
     """
-    Represents a single research paper in the system.
+    A research paper sourced from Semantic Scholar.
     """
 
-    id: int
     paper_id: str
     title: str
-    authors: list[str]
-    year: int | None
-    journal: str | None
-    abstract: str | None
-    keywords: list[str]
-    doi: str | None
+    authors: list[str] = field(default_factory=list)
+    year: int | None = None
+    venue: str | None = None
+    abstract: str | None = None
+    citation_count: int = 0
+    reference_count: int = 0
+    external_ids: dict[str, str] = field(default_factory=dict)
+    tldr: str | None = None
 
     @staticmethod
-    def from_dict(data: JSONDict) -> "Paper":
+    def from_s2_response(data: dict[str, object]) -> Paper:
         """
-        Create a Paper instance from a raw JSON dictionary.
+        Parse a Semantic Scholar API paper object into a Paper.
 
-        Args:
-            data (JSONDict): A single paper dictionary from the dataset.
-
-        Returns:
-            Paper: A normalized Paper instance.
+        Handles the S2 response shape:
+        - authors: [{"authorId": "...", "name": "..."}]
+        - externalIds: {"DOI": "...", "ArXiv": "...", ...} (nulls possible)
+        - tldr: {"model": "...", "text": "..."} or null
         """
-        # ---- id ----
-        raw_id = data.get("id")
-        paper_id = int(raw_id) if isinstance(raw_id, int) else -1
+        paper_id = data.get("paperId")
+        if not isinstance(paper_id, str) or not paper_id:
+            msg = f"Missing or invalid paperId: {data.get('paperId')!r}"
+            raise ValueError(msg)
 
-        # ---- title ----
-        raw_title = data.get("title")
-        title = raw_title.strip() if isinstance(raw_title, str) else ""
+        title = data.get("title") or ""
+        if isinstance(title, str):
+            title = title.strip()
+        else:
+            title = ""
 
-        # ---- year ----
-        raw_year = data.get("year")
-        year = int(raw_year) if isinstance(raw_year, int) else None
-
-        # ---- journal / abstract / doi ----
-        raw_journal = data.get("journal")
-        journal = raw_journal.strip() or None if isinstance(raw_journal, str) else None
-
-        raw_abstract = data.get("abstract")
-        abstract = (
-            raw_abstract.strip() or None if isinstance(raw_abstract, str) else None
-        )
-
-        raw_doi = data.get("doi")
-        doi = raw_doi.strip() or None if isinstance(raw_doi, str) else None
-
-        # ---- authors ----
+        # Flatten authors from [{"authorId": "...", "name": "..."}] to ["name"]
         raw_authors = data.get("authors")
-        authors_list = (
-            cast(list[object], raw_authors) if isinstance(raw_authors, list) else []
-        )
         authors: list[str] = []
-        for a in authors_list:
-            if isinstance(a, str):
-                s = a.strip()
-                if s:
-                    authors.append(s)
+        if isinstance(raw_authors, list):
+            for a in raw_authors:
+                if isinstance(a, dict):
+                    name = a.get("name")
+                    if isinstance(name, str) and name.strip():
+                        authors.append(name.strip())
+        else:
+            authors = []
 
-        # ---- keywords ----
-        raw_keywords = data.get("keywords")
-        keywords_list = (
-            cast(list[object], raw_keywords) if isinstance(raw_keywords, list) else []
-        )
-        keywords: list[str] = []
-        for k in keywords_list:
-            if isinstance(k, str):
-                s = k.strip()
-                if s:
-                    keywords.append(s)
+        year = data.get("year")
+        if isinstance(year, int):
+            year = int(year)
+        else:
+            year = None
 
-        # ---- final id for database ----
-        stable_id = make_paper_id(title=title, year=year, authors=authors)
+        venue = data.get("venue")
+        if isinstance(venue, str):
+            venue = venue.strip() or None
+        else:
+            venue = None
+
+        abstract = data.get("abstract")
+        if isinstance(abstract, str):
+            abstract = abstract.strip() or None
+        else:
+            abstract = None
+
+        citation_count = data.get("citationCount")
+        if isinstance(citation_count, int):
+            citation_count = int(citation_count)
+        else:
+            citation_count = 0
+
+        reference_count = data.get("referenceCount")
+        if isinstance(reference_count, int):
+            reference_count = int(reference_count)
+        else:
+            reference_count = 0
+
+        # Filter out null values from externalIds
+        raw_ext = data.get("externalIds")
+        external_ids: dict[str, str] = {}
+        if isinstance(raw_ext, dict):
+            for k, v in raw_ext.items():
+                if isinstance(v, str):
+                    external_ids[k] = v
+                elif isinstance(v, int):
+                    external_ids[k] = str(v)
+        else:
+            external_ids = {}
+
+        # Extract tldr text from {"model": "...", "text": "..."}
+        raw_tldr = data.get("tldr")
+        tldr: str | None = None
+        if isinstance(raw_tldr, dict):
+            tldr_text = raw_tldr.get("text")
+            if isinstance(tldr_text, str) and tldr_text.strip():
+                tldr = tldr_text.strip()
+            else:
+                tldr = None
+        else:
+            tldr = None
 
         return Paper(
-            id=paper_id,
-            paper_id=stable_id,
+            paper_id=paper_id,
             title=title,
             authors=authors,
             year=year,
-            journal=journal,
+            venue=venue,
             abstract=abstract,
-            keywords=keywords,
-            doi=doi,
+            citation_count=citation_count,
+            reference_count=reference_count,
+            external_ids=external_ids,
+            tldr=tldr,
         )

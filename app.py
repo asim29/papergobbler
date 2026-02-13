@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportUnknownParameterType=false
 from pathlib import Path
 from typing import cast
 

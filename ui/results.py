@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false
 from typing import cast
 
 import streamlit as st

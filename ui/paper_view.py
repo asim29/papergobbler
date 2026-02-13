@@ -1,3 +1,4 @@
+# pyright: reportAttributeAccessIssue=false
 import streamlit as st
 
 from entities import Paper
