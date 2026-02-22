@@ -44,6 +44,7 @@ def add_to_collection(paper: Paper) -> None:
             "year": paper.year,
             "citation_count": paper.citation_count,
             "venue": paper.venue,
+            "citekey": paper.citekey,
         }
         save_collection(c)
         st.rerun()

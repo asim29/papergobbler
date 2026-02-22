@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
+from typing import cast
+
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 
 @dataclass(frozen=True)
@@ -19,6 +23,30 @@ class Paper:
     reference_count: int = 0
     external_ids: dict[str, str] = field(default_factory=dict)
     tldr: str | None = None
+
+    @property
+    def citekey(self) -> str:
+        """
+        Generate a BibTeX-style cite key: lastNameYearShortTitle.
+
+        E.g. "vaswani2017AttentionAll" for Vaswani et al. 2017,
+        "Attention Is All You Need".
+        """
+        # Last name of first author
+        if self.authors:
+            last = self.authors[0].split()[-1]
+            last = re.sub(r"[^a-z]", "", last.lower())
+        else:
+            last = "anon"
+
+        year = str(self.year) if self.year else ""
+
+        # First three non-stopword words from the title, each capitalized
+        words = cast("list[str]", re.findall(r"[a-zA-Z]+", self.title))
+        filtered = [w for w in words if w.lower() not in ENGLISH_STOP_WORDS]
+        short = "".join(w.capitalize() for w in filtered[:3])
+
+        return f"{last}{year}{short}"
 
     @staticmethod
     def from_s2_response(data: dict[str, object]) -> Paper:

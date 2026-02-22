@@ -90,7 +90,9 @@ def render_sidebar() -> None:
         return
 
     for pid in active.paper_ids:
-        if st.sidebar.button(f"• {pid[:12]}…", key=f"qv_{pid}"):
+        meta = active.paper_metadata.get(pid, {})
+        label = cast("str", meta.get("citekey") or pid[:12])
+        if st.sidebar.button(f"• {label}", key=f"qv_{pid}"):
             stack = cast("list[object]", st.session_state["view_stack"])
             stack.append(DetailView(paper_id=pid))
             st.session_state["page"] = "search"
