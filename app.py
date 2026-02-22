@@ -10,6 +10,7 @@ from src.api import search_papers
 from ui import (
     DetailView,
     ListView,
+    render_collection_page,
     render_detail_view,
     render_list_view,
     render_sidebar,
@@ -37,7 +38,7 @@ def main() -> None:
     page = cast("str", st.session_state["page"])
 
     if page == "collection":
-        _ = st.info("Collection page coming in Stage 3.")
+        render_collection_page()
         return
 
     # ---- Search page ----

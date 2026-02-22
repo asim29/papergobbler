@@ -19,14 +19,12 @@ def render_sidebar() -> None:
         st.session_state["page"] = "search"
         st.rerun()
 
-    if st.sidebar.button("Collection", key="nav_collection"):
-        st.session_state["page"] = "collection"
-        st.rerun()
-
     _ = st.sidebar.divider()
 
     # ---- Collections ----
-    _ = st.sidebar.header("Collections")
+    if st.sidebar.button("Collections", key="nav_collection"):
+        st.session_state["page"] = "collection"
+        st.rerun()
 
     collections = load_all_collections()
     st.session_state["collections"] = collections

@@ -39,8 +39,13 @@ def add_to_collection(paper: Paper) -> None:
             _ = st.info("Already in collection.")
             return
         c.paper_ids.append(paper.paper_id)
+        c.paper_titles[paper.paper_id] = paper.title
+        c.paper_metadata[paper.paper_id] = {
+            "year": paper.year,
+            "citation_count": paper.citation_count,
+            "venue": paper.venue,
+        }
         save_collection(c)
-        _ = st.success("Added.")
-        return
+        st.rerun()
 
     _ = st.warning("Active collection not found.")
