@@ -1,7 +1,11 @@
-from .collection import render_active_collection
+from .detail_view import DetailView, render_detail_view
+from .list_view import ListView, render_list_view
 from .sidebar import render_sidebar
 
 __all__ = [
-    "render_active_collection",
+    "DetailView",
+    "ListView",
+    "render_detail_view",
+    "render_list_view",
     "render_sidebar",
 ]

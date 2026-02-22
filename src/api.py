@@ -54,7 +54,7 @@ def _get(url: str, params: dict[str, str | int] | None = None) -> dict[str, obje
     resp = _session().get(url, params=params)
     if not resp.ok:
         raise S2ApiError(resp.status_code, resp.text)
-    return cast(dict[str, object], resp.json())
+    return cast("dict[str, object]", resp.json())
 
 
 def _post(
@@ -66,7 +66,7 @@ def _post(
     resp = _session().post(url, params=params, json=json_body)
     if not resp.ok:
         raise S2ApiError(resp.status_code, resp.text)
-    return cast(dict[str, object], resp.json())
+    return cast("dict[str, object]", resp.json())
 
 
 def search_papers(
